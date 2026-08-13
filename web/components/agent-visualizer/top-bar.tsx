@@ -114,7 +114,7 @@ export const TopBar = memo(function TopBar({
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center gap-4 font-mono text-[10px]" style={{ zIndex: Z.info }}>
       {/* Searchable session switcher */}
-      {sessions.length > 1 && (
+      {sessions.length > 0 && (
         <SessionCommandPalette
           sessions={sessions}
           selectedSessionId={selectedSessionId}
