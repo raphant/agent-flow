@@ -399,7 +399,7 @@ export function AgentVisualizer() {
         onClose={() => setShowTimeline(false)}
       />
 
-      {/* Top bar: session tabs + info/controls */}
+      {/* Top bar: session switcher + info/controls */}
       <TopBar
         sessions={bridge.sessions}
         selectedSessionId={bridge.selectedSessionId}

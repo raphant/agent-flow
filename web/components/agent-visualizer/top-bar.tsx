@@ -5,7 +5,7 @@ import { Z } from "@/lib/agent-types"
 import { COLORS } from "@/lib/colors"
 import { formatTokens } from "@/lib/utils"
 import { agentCost } from "./canvas/draw-cost"
-import { SessionTabs } from "./session-tabs"
+import { SessionCommandPalette } from "./session-command-palette"
 import type { SessionInfo, ConnectionStatus } from "@/lib/bridge-types"
 
 // ─── Mute/Unmute SVG Icons ───────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
 // ─── Top Bar ────────────────────────────────────────────────────────────────
 
 export interface TopBarProps {
-  // Session tabs
+  // Session switcher
   sessions: SessionInfo[]
   selectedSessionId: string | null
   sessionsWithActivity: Set<string>
@@ -110,17 +110,15 @@ export const TopBar = memo(function TopBar({
 }: TopBarProps) {
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center gap-4 font-mono text-[10px]" style={{ zIndex: Z.info }}>
-      {/* Session tabs — scrollable, takes available space */}
+      {/* Searchable session switcher */}
       {sessions.length > 1 && (
-        <div className="min-w-0 flex-shrink overflow-x-auto scrollbar-hide">
-          <SessionTabs
-            sessions={sessions}
-            selectedSessionId={selectedSessionId}
-            sessionsWithActivity={sessionsWithActivity}
-            onSelectSession={onSelectSession}
-            onCloseSession={onCloseSession}
-          />
-        </div>
+        <SessionCommandPalette
+          sessions={sessions}
+          selectedSessionId={selectedSessionId}
+          sessionsWithActivity={sessionsWithActivity}
+          onSelectSession={onSelectSession}
+          onCloseSession={onCloseSession}
+        />
       )}
 
       {/* Spacer pushes info to the right */}

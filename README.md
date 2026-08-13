@@ -93,6 +93,7 @@ You can also point Agent Flow at a JSONL event log file:
 | Shortcut | Action |
 |----------|--------|
 | `Cmd+Alt+A` (Mac) / `Ctrl+Alt+A` (Win/Linux) | Open Agent Flow |
+| `Cmd+K` (Mac) / `Ctrl+K` (Win/Linux) | Search and switch sessions when more than one session is available |
 
 ## Settings
 
