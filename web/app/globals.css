@@ -130,6 +130,19 @@
   filter: grayscale(1) sepia(1) saturate(1.8) hue-rotate(345deg) brightness(1.5) contrast(1.12);
 }
 
+/* Keep the session dialog and Messages surface side by side. */
+@media (min-width: 768px) {
+  body:has(#session-command-palette) [data-message-feed] {
+    transform: translateX(432px);
+  }
+}
+
+@media (max-width: 767px) {
+  body:has(#session-command-palette) [data-message-feed] {
+    visibility: hidden;
+  }
+}
+
 /* Glass card effect */
 .glass-card {
   background: rgba(10, 15, 30, 0.7);

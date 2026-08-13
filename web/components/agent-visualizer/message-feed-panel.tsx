@@ -191,6 +191,7 @@ export function MessageFeedPanel({
 
     return (
       <div
+        data-message-feed
         className="absolute cursor-pointer transition-all hover:scale-[1.02]"
         style={{ top: 48, left: 12, zIndex: Z.info, pointerEvents: 'auto' }}
         onClick={() => setExpanded(true)}
@@ -213,7 +214,8 @@ export function MessageFeedPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute"
+      data-message-feed
+      className="absolute transition-transform"
       style={{ top: 48, left: 12, zIndex: Z.info, pointerEvents: 'auto' }}
       onClick={(e) => e.stopPropagation()}
     >
