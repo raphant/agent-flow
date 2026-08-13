@@ -18,9 +18,10 @@ import type { TypedDisposable, TypedEvent } from './typed-event-emitter'
 export type AgentRuntimeMode = 'claude' | 'codex'
 
 export interface SessionLifecycleEvent {
-  type: 'started' | 'ended' | 'updated'
+  type: 'started' | 'ended' | 'updated' | 'activity'
   sessionId: string
   label: string
+  lastActivityTime?: number
 }
 
 /** Interface every runtime's watcher implements. Uses portable typed-event
@@ -95,9 +96,10 @@ export function wireWatcherToPanel(
     const panel = VisualizerPanel.getCurrent()
     if (!panel) return
     if (lifecycle.type === 'started') {
+      const session = watcher.getActiveSessions().find(item => item.id === lifecycle.sessionId)
       panel.postMessage({
         type: 'session-started',
-        session: {
+        session: session ?? {
           id: lifecycle.sessionId,
           label: lifecycle.label,
           status: 'active',
@@ -107,6 +109,8 @@ export function wireWatcherToPanel(
       })
     } else if (lifecycle.type === 'updated') {
       panel.postMessage({ type: 'session-updated', sessionId: lifecycle.sessionId, label: lifecycle.label })
+    } else if (lifecycle.type === 'activity' && lifecycle.lastActivityTime !== undefined) {
+      panel.postMessage({ type: 'session-activity', sessionId: lifecycle.sessionId, lastActivityTime: lifecycle.lastActivityTime })
     } else {
       panel.postMessage({ type: 'session-ended', sessionId: lifecycle.sessionId })
     }

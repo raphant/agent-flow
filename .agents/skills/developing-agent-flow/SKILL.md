@@ -89,6 +89,7 @@ Run `git diff --check` after the final edit.
 - The web package has no browser test framework.
 - Leave one pure test for new logic and run a direct browser probe for interaction behavior.
 - Synthetic browser state disappears after a page reload or bridge reset.
+- Session attachment must preserve the newest transcript mtime. Replacing it with `Date.now()` makes every activity label say `now` after a reload.
 - Session switching caches simulation snapshots in `AgentVisualizer`, so test switching after events have reached more than one session.
 
 ## Verification

@@ -48,6 +48,7 @@ export type ExtensionToWebviewMessage =
   | { type: 'session-started'; session: SessionInfo }
   | { type: 'session-ended'; sessionId: string }
   | { type: 'session-updated'; sessionId: string; label: string }
+  | { type: 'session-activity'; sessionId: string; lastActivityTime: number }
 
 export interface VisualizerConfig {
   mode: 'live' | 'replay'

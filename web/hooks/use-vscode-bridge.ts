@@ -207,7 +207,7 @@ export function useVSCodeBridge(): BridgeHookResult {
           if (existing) {
             // Session resumed after inactivity — mark active again
             return prev.map(s => s.id === session.id
-              ? { ...s, status: 'active' as const, lastActivityTime: Date.now() }
+              ? { ...s, ...session, status: 'active' as const }
               : s)
           }
           return [...prev, session]
@@ -223,6 +223,11 @@ export function useVSCodeBridge(): BridgeHookResult {
         const { sessionId, label } = data as { sessionId: string; label: string }
         setSessions(prev => prev.map(s =>
           s.id === sessionId ? { ...s, label } : s
+        ))
+      } else if (type === 'activity') {
+        const { sessionId, lastActivityTime } = data as { sessionId: string; lastActivityTime: number }
+        setSessions(prev => prev.map(s =>
+          s.id === sessionId ? { ...s, lastActivityTime } : s
         ))
       } else if (type === 'ended') {
         const sessionId = data as string

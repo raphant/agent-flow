@@ -13,7 +13,7 @@ type InitCallback = () => void
 type EventCallback = (event: AgentEvent) => void
 type StatusCallback = (status: ConnectionStatus, source: string) => void
 type ConfigCallback = (config: Partial<{ mode: string; autoPlay: boolean; showMockData: boolean; disable1MContext: boolean }>) => void
-type SessionCallback = (type: 'list' | 'started' | 'ended' | 'updated' | 'reset', data: SessionInfo[] | SessionInfo | string | { sessionId: string; label: string }) => void
+type SessionCallback = (type: 'list' | 'started' | 'ended' | 'updated' | 'activity' | 'reset', data: SessionInfo[] | SessionInfo | string | { sessionId: string; label: string } | { sessionId: string; lastActivityTime: number }) => void
 
 class VSCodeBridge {
   private _isVSCode = false
@@ -99,6 +99,12 @@ class VSCodeBridge {
       case 'session-updated':
         for (const cb of this.sessionListeners) {
           cb('updated', { sessionId: data.sessionId, label: data.label })
+        }
+        break
+
+      case 'session-activity':
+        for (const cb of this.sessionListeners) {
+          cb('activity', { sessionId: data.sessionId, lastActivityTime: data.lastActivityTime })
         }
         break
     }

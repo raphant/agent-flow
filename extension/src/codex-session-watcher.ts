@@ -21,6 +21,7 @@ import {
 } from './constants'
 import { readNewFileLines } from './fs-utils'
 import { createLogger } from './logger'
+import { remainingInactivityMs } from './session-timing'
 import {
   CodexRolloutParser, CodexRolloutState, createCodexRolloutState,
 } from './codex-rollout-parser'
@@ -319,7 +320,7 @@ export class CodexSessionWatcher implements AgentSessionWatcher {
     this.sessions.set(sessionId, session)
 
     // Drain existing content first, so late-opening panels see full history.
-    this.readNewLines(sessionId)
+    this.readNewLines(sessionId, stat.mtimeMs)
 
     session.sessionDetected = true
     this._onSessionDetected.fire(sessionId)
@@ -332,11 +333,11 @@ export class CodexSessionWatcher implements AgentSessionWatcher {
     // fs.watch on macOS sometimes silently stops after long idle — poll as backup.
     session.pollTimer = setInterval(() => this.readNewLines(sessionId), POLL_FALLBACK_MS)
 
-    this.resetInactivityTimer(sessionId)
+    this.resetInactivityTimer(sessionId, session.lastActivityTime)
     log.info(`Attached to session ${sessionId.slice(0, SESSION_ID_DISPLAY)} at ${filePath}`)
   }
 
-  private readNewLines(sessionId: string): void {
+  private readNewLines(sessionId: string, activityTime = Date.now()): void {
     const session = this.sessions.get(sessionId)
     if (!session) return
 
@@ -344,7 +345,7 @@ export class CodexSessionWatcher implements AgentSessionWatcher {
     if (!result) return
     session.fileSize = result.newSize
     session.fileTail = result.tail
-    session.lastActivityTime = Date.now()
+    session.lastActivityTime = activityTime
 
     // Re-activate if the session had been marked complete on inactivity —
     // new content means the user resumed the Codex CLI.
@@ -359,12 +360,14 @@ export class CodexSessionWatcher implements AgentSessionWatcher {
       catch (err) { log.debug('Parser threw on line:', err) }
     }
 
-    this.resetInactivityTimer(sessionId)
+    this.resetInactivityTimer(sessionId, activityTime)
   }
 
-  private resetInactivityTimer(sessionId: string): void {
+  private resetInactivityTimer(sessionId: string, activityTime = Date.now()): void {
     const session = this.sessions.get(sessionId)
     if (!session) return
+    session.lastActivityTime = activityTime
+    this._onSessionLifecycle.fire({ type: 'activity', sessionId, label: session.label, lastActivityTime: activityTime })
     if (session.inactivityTimer) { clearTimeout(session.inactivityTimer) }
     session.inactivityTimer = setTimeout(() => {
       if (session.sessionCompleted) return
@@ -376,7 +379,7 @@ export class CodexSessionWatcher implements AgentSessionWatcher {
         sessionId,
       })
       this._onSessionLifecycle.fire({ type: 'ended', sessionId, label: session.label })
-    }, INACTIVITY_TIMEOUT_MS)
+    }, remainingInactivityMs(activityTime))
   }
 
   dispose(): void {

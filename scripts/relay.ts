@@ -21,6 +21,7 @@ import {
   HOOK_SERVER_NOT_STARTED, WORKSPACE_HASH_LENGTH,
 } from '../extension/src/constants'
 import { setLogLevel } from '../extension/src/logger'
+import { remainingInactivityMs } from '../extension/src/session-timing'
 import type { TelemetryClient } from './telemetry'
 
 const MAX_EVENT_BUFFER = 5000
@@ -102,15 +103,25 @@ function broadcastEvent(event: AgentEvent) {
 
 function broadcastSessionLifecycle(type: 'started' | 'ended' | 'updated', sessionId: string, label: string) {
   if (type === 'started') {
+    const watched = sessions.get(sessionId)
+    const now = Date.now()
     broadcast(JSON.stringify({
       type: 'session-started',
-      session: { id: sessionId, label, status: 'active', startTime: Date.now(), lastActivityTime: Date.now() } as SessionInfo,
+      session: {
+        id: sessionId, label, status: 'active',
+        startTime: watched?.sessionStartTime ?? now,
+        lastActivityTime: watched?.lastActivityTime ?? now,
+      } as SessionInfo,
     }))
   } else if (type === 'ended') {
     broadcast(JSON.stringify({ type: 'session-ended', sessionId }))
   } else if (type === 'updated') {
     broadcast(JSON.stringify({ type: 'session-updated', sessionId, label }))
   }
+}
+
+function broadcastSessionActivity(sessionId: string, lastActivityTime: number) {
+  broadcast(JSON.stringify({ type: 'session-activity', sessionId, lastActivityTime }))
 }
 
 // ─── Session watcher ────────────────────────────────────────────────────────
@@ -156,12 +167,13 @@ const watcherDelegate = {
   resetInactivityTimer: (sessionId: string) => resetInactivityTimer(sessionId),
 }
 
-function resetInactivityTimer(sessionId: string) {
+function resetInactivityTimer(sessionId: string, activityTime = Date.now()) {
   const session = sessions.get(sessionId)
   if (!session) return
 
   const wasCompleted = session.sessionCompleted
-  session.lastActivityTime = Date.now()
+  session.lastActivityTime = activityTime
+  broadcastSessionActivity(sessionId, activityTime)
   session.sessionCompleted = false
 
   if (wasCompleted) {
@@ -187,10 +199,10 @@ function resetInactivityTimer(sessionId: string) {
       })
       broadcastSessionLifecycle('ended', sessionId, session.label)
     }
-  }, INACTIVITY_TIMEOUT_MS)
+  }, remainingInactivityMs(activityTime))
 }
 
-function watchSession(sessionId: string, filePath: string) {
+function watchSession(sessionId: string, filePath: string, initialActivityTime: number) {
   const defaultLabel = `Session ${sessionId.slice(0, SESSION_ID_DISPLAY)}`
   const session: WatchedSession = {
     sessionId, filePath,
@@ -200,7 +212,7 @@ function watchSession(sessionId: string, filePath: string) {
     seenToolUseIds: new Set(),
     seenMessageHashes: new Set(),
     sessionDetected: false, sessionCompleted: false,
-    lastActivityTime: Date.now(),
+    lastActivityTime: initialActivityTime,
     inactivityTimer: null,
     subagentWatchers: new Map(),
     spawnedSubagents: new Set(),
@@ -244,7 +256,7 @@ function watchSession(sessionId: string, filePath: string) {
 
   session.subagentsDir = path.join(path.dirname(filePath), sessionId, 'subagents')
   scanSubagentsDir(watcherDelegate, parser, sessionId)
-  resetInactivityTimer(sessionId)
+  resetInactivityTimer(sessionId, initialActivityTime)
 
   log(`[session] Watching ${sessionId.slice(0, SESSION_ID_DISPLAY)} — "${session.label}"`)
 }
@@ -314,7 +326,7 @@ function scanForActiveSessions(workspace: string) {
 
         const ageSeconds = (Date.now() - newestMtime) / 1000
         if (ageSeconds <= ACTIVE_SESSION_AGE_S && !sessions.has(sessionId)) {
-          watchSession(sessionId, filePath)
+          watchSession(sessionId, filePath, newestMtime)
         }
       }
     } catch {}

@@ -13,6 +13,7 @@ import { readNewFileLines, foldPathCase } from './fs-utils'
 import { handlePermissionDetection } from './permission-detection'
 import { scanSubagentsDir, readSubagentNewLines } from './subagent-watcher'
 import { createLogger } from './logger'
+import { remainingInactivityMs } from './session-timing'
 
 const log = createLogger('SessionWatcher')
 
@@ -373,7 +374,7 @@ export class SessionWatcher implements AgentSessionWatcher {
       for (const af of activeFiles) {
         if (!this.sessions.has(af.sessionId)) {
           log.info(`Active session found: ${af.filePath}`)
-          this.watchSession(af.sessionId, af.filePath)
+          this.watchSession(af.sessionId, af.filePath, af.mtime)
         } else {
           // Already watching — scan for subagents
           scanSubagentsDir(this.selfDelegate, this.parser, af.sessionId)
@@ -384,7 +385,7 @@ export class SessionWatcher implements AgentSessionWatcher {
     }
   }
 
-  private watchSession(sessionId: string, filePath: string): void {
+  private watchSession(sessionId: string, filePath: string, initialActivityTime: number): void {
     const defaultLabel = `Session ${sessionId.slice(0, SESSION_ID_DISPLAY)}`
     const session: WatchedSession = {
       sessionId,
@@ -398,7 +399,7 @@ export class SessionWatcher implements AgentSessionWatcher {
       seenMessageHashes: new Set(),
       sessionDetected: false,
       sessionCompleted: false,
-      lastActivityTime: this.newestMtime(filePath, sessionId),
+      lastActivityTime: initialActivityTime,
       inactivityTimer: null,
       subagentWatchers: new Map(),
       spawnedSubagents: new Set(),
@@ -473,7 +474,7 @@ export class SessionWatcher implements AgentSessionWatcher {
     scanSubagentsDir(this.selfDelegate, this.parser, sessionId)
 
     // Start inactivity timer so the session completes if no new content arrives
-    this.resetInactivityTimer(sessionId)
+    this.resetInactivityTimer(sessionId, initialActivityTime)
   }
 
   private readNewLines(sessionId: string): void {
@@ -498,12 +499,13 @@ export class SessionWatcher implements AgentSessionWatcher {
   }
 
   /** Reset the inactivity timer. When no new content arrives, emit agent_complete */
-  private resetInactivityTimer(sessionId: string): void {
+  private resetInactivityTimer(sessionId: string, activityTime = Date.now()): void {
     const session = this.sessions.get(sessionId)
     if (!session) return
 
     const wasCompleted = session.sessionCompleted
-    session.lastActivityTime = Date.now()
+    session.lastActivityTime = activityTime
+    this._onSessionLifecycle.fire({ type: 'activity', sessionId, label: session.label, lastActivityTime: activityTime })
     session.sessionCompleted = false
 
     // If the session was previously marked completed, re-emit agent_spawn
@@ -538,27 +540,10 @@ export class SessionWatcher implements AgentSessionWatcher {
         }, sessionId)
         this._onSessionLifecycle.fire({ type: 'ended', sessionId, label: session.label })
       }
-    }, INACTIVITY_TIMEOUT_MS)
+    }, remainingInactivityMs(activityTime))
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
-
-  /** Get the newest mtime across a session's main JSONL and its subagent files. */
-  private newestMtime(filePath: string, sessionId: string): number {
-    let newest: number
-    try { newest = fs.statSync(filePath).mtimeMs } catch { return Date.now() }
-    const subDir = path.join(path.dirname(filePath), sessionId, 'subagents')
-    try {
-      if (fs.existsSync(subDir)) {
-        for (const f of fs.readdirSync(subDir)) {
-          if (!f.endsWith('.jsonl')) continue
-          const mt = fs.statSync(path.join(subDir, f)).mtimeMs
-          if (mt > newest) newest = mt
-        }
-      }
-    } catch { /* expected if subagents dir doesn't exist yet */ }
-    return newest
-  }
 
   private elapsed(sessionId?: string): number {
     if (sessionId) {
