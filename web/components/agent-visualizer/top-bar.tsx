@@ -42,6 +42,7 @@ function ToggleButton({ active, onClick, children, style, activeColor }: {
   return (
     <button
       onClick={onClick}
+      aria-pressed={active}
       className="px-1.5 py-0.5 rounded transition-all"
       style={{
         background: active ? (activeColor?.bg ?? COLORS.toggleActive) : COLORS.toggleInactive,
@@ -95,9 +96,11 @@ export interface TopBarProps {
   showCostOverlay: boolean
   showTimeline: boolean
   isMuted: boolean
+  amberLensMode: boolean
   onTogglePanel: (panel: 'files' | 'transcript' | 'cost') => void
   onToggleTimeline: () => void
   onToggleMute: () => void
+  onToggleAmberLensMode: () => void
 }
 
 export const TopBar = memo(function TopBar({
@@ -105,8 +108,8 @@ export const TopBar = memo(function TopBar({
   onSelectSession, onCloseSession,
   isVSCode, connectionStatus,
   agentCount, totalTokens,
-  showFileAttention, showTranscript, showCostOverlay, showTimeline, isMuted,
-  onTogglePanel, onToggleTimeline, onToggleMute,
+  showFileAttention, showTranscript, showCostOverlay, showTimeline, isMuted, amberLensMode,
+  onTogglePanel, onToggleTimeline, onToggleMute, onToggleAmberLensMode,
 }: TopBarProps) {
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center gap-4 font-mono text-[10px]" style={{ zIndex: Z.info }}>
@@ -153,6 +156,7 @@ export const TopBar = memo(function TopBar({
         </div>
 
         {/* Independent toggles */}
+        <ToggleButton active={amberLensMode} onClick={onToggleAmberLensMode}>Amber</ToggleButton>
         <ToggleButton active={showTimeline} onClick={onToggleTimeline}>Timeline</ToggleButton>
         <ToggleButton active={!isMuted} onClick={onToggleMute} style={{ border: `1px solid ${COLORS.toggleBorder}` }}>
           {isMuted ? <MutedIcon /> : <UnmutedIcon />}

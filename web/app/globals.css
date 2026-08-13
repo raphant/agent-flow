@@ -124,6 +124,12 @@
   }
 }
 
+/* High-contrast monochrome palette for dark red or orange-tinted lenses.
+   Filtering the visualizer root also covers the canvas without a second color system. */
+[data-color-mode='amber-lens'] {
+  filter: grayscale(1) sepia(1) saturate(1.8) hue-rotate(345deg) brightness(1.5) contrast(1.12);
+}
+
 /* Glass card effect */
 .glass-card {
   background: rgba(10, 15, 30, 0.7);

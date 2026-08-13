@@ -19,6 +19,7 @@ import { OpenFileProvider } from "./tool-content-renderer"
 import { stopPropagationHandlers } from "./shared-ui"
 import { TimelineEvent, TIMING } from "@/lib/agent-types"
 import { COLORS } from "@/lib/colors"
+import { COLOR_MODE_PREF_KEY } from "@/lib/canvas-constants"
 
 import { MOCK_DURATION } from "@/lib/mock-scenario"
 import { MessageFeedPanel } from "./message-feed-panel"
@@ -69,6 +70,19 @@ export function AgentVisualizer() {
   const [showTimeline, setShowTimeline] = useState(false)
   const [showFileAttention, setShowFileAttention] = useState(false)
   const [showTranscript, setShowTranscript] = useState(false)
+  const [amberLensMode, setAmberLensMode] = useState(false)
+
+  useEffect(() => {
+    try { setAmberLensMode(localStorage.getItem(COLOR_MODE_PREF_KEY) === 'amber-lens') } catch { /* localStorage unavailable */ }
+  }, [])
+
+  const toggleAmberLensMode = useCallback(() => {
+    setAmberLensMode(current => {
+      const next = !current
+      try { localStorage.setItem(COLOR_MODE_PREF_KEY, next ? 'amber-lens' : 'default') } catch { /* localStorage unavailable */ }
+      return next
+    })
+  }, [])
 
   // Mutually exclusive panel toggling — opening one closes the others
   const toggleExclusivePanel = useCallback((panel: 'files' | 'transcript' | 'cost') => {
@@ -258,7 +272,11 @@ export function AgentVisualizer() {
 
   return (
     <OpenFileProvider value={bridge.isVSCode ? openFile : null}>
-    <div className="h-screen w-screen relative overflow-hidden" style={{ background: COLORS.void }}>
+    <div
+      className="h-screen w-screen relative overflow-hidden"
+      data-color-mode={amberLensMode ? 'amber-lens' : 'default'}
+      style={{ background: COLORS.void }}
+    >
       {/* Empty state when no demo and no live data */}
       {isEmpty && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
@@ -415,9 +433,11 @@ export function AgentVisualizer() {
         showCostOverlay={showCostOverlay}
         showTimeline={showTimeline}
         isMuted={isMuted}
+        amberLensMode={amberLensMode}
         onTogglePanel={toggleExclusivePanel}
         onToggleTimeline={() => setShowTimeline(prev => !prev)}
         onToggleMute={handleToggleMute}
+        onToggleAmberLensMode={toggleAmberLensMode}
       />
     </div>
     </OpenFileProvider>
