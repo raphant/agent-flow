@@ -1,6 +1,6 @@
 # Agent Flow
 
-Real-time visualization of Claude Code and Codex agent orchestration. Watch your agents think, branch, and coordinate as they work. [Demo video here](https://www.youtube.com/watch?v=Ud6eDrFN-TA). 
+Real-time visualization of Claude Code, Codex, and Pi agent orchestration. Watch your agents think, branch, and coordinate as they work. [Demo video here](https://www.youtube.com/watch?v=Ud6eDrFN-TA).
 
 ![Agent Flow visualization](https://res.cloudinary.com/dxlvclh9c/image/upload/v1773924941/screenshot_e7yox3.png)
 
@@ -18,9 +18,10 @@ Claude Code is powerful, but its execution is a black box — you see the final 
 ## Features
 
 - **Live agent visualization**: Watch agent execution as an interactive node graph with real-time tool calls, branching, and return flows
-- **Claude Code + Codex**: Auto-detects sessions from both runtimes concurrently and shows them side-by-side, or restrict to one via the `agentVisualizer.runtime` setting
+- **Claude Code + Codex + Pi**: Auto-detects sessions from all three runtimes and shows them side-by-side, or restricts the watcher to one runtime
 - **Claude Code hooks**: Lightweight HTTP hook server receives events directly from Claude Code for zero-latency streaming
 - **Codex rollout tailing**: Reads `~/.codex/sessions/**/rollout-*.jsonl` (respects `CODEX_HOME`) and surfaces tool calls, reasoning, and authoritative token counts from Codex's own event stream
+- **Pi session tailing**: Reads Pi session JSONL, preserves recorded activity times, and shows persisted `pi-subagents` children
 - **Multi-session support**: Track multiple concurrent agent sessions with tabs
 - **Interactive canvas**: Pan, zoom, click agents and tool calls to inspect details
 - **Timeline & transcript panels**: Review the full execution timeline, file attention heatmap, and message transcript
@@ -34,10 +35,11 @@ Claude Code is powerful, but its execution is a black box — you see the final 
 npx agent-flow-app
 ```
 
-This starts the visualizer in your browser. Start a Claude Code session in another terminal — events will stream in real-time.
+This starts the visualizer in your browser. Start a supported agent session in another terminal to stream its events.
 
 Options:
 - `--port <number>` — change the server port (default: 3001)
+- `--pi-session-dir <path>` — override the Pi session directory
 - `--no-open` — don't open the browser automatically
 - `--verbose` — show detailed event logs
 
@@ -51,26 +53,28 @@ pnpm run setup      # configure Claude Code hooks (one-time)
 pnpm run dev        # start the web app + event relay
 ```
 
-Open http://localhost:3000 and start a Claude Code session in another terminal — events will stream to the browser in real-time.
+Open http://localhost:3000 and start a supported agent session in another terminal.
 
 ### VS Code Extension
 
 1. Install the extension
 2. Open the Command Palette (`Cmd+Shift+P`) and run **Agent Flow: Open Agent Flow**
-3. Start a Claude Code or Codex session in your workspace — Agent Flow will auto-detect it
+3. Start a Claude Code, Codex, or Pi session in your workspace — Agent Flow will auto-detect it
 
 Agent Flow automatically configures Claude Code hooks the first time you open the panel. To manually reconfigure, run **Agent Flow: Configure Claude Code Hooks** from the Command Palette.
 
 ### Runtime selection
 
-By default Agent Flow watches both Claude Code (`~/.claude/projects/`) and Codex (`~/.codex/sessions/`) concurrently in all three entry points (VS Code extension, `pnpm run dev`, `npx agent-flow-app`). Sessions are shown side-by-side and tagged by runtime. If you only use one, the other is a harmless no-op — no visible effect, no user action needed.
+By default Agent Flow watches Claude Code (`~/.claude/projects/`), Codex (`~/.codex/sessions/`), and Pi (`~/.pi/agent/sessions/`) in all three entry points. Sessions appear side-by-side and use runtime-specific labels.
 
 To restrict to one runtime:
 
-- **VS Code extension:** set `agentVisualizer.runtime` to `"auto"` / `"claude"` / `"codex"` in your settings
-- **`pnpm run dev` and `npx agent-flow-app`:** set the `AGENT_FLOW_RUNTIME` environment variable to `claude` or `codex` (defaults to watching both)
+- **VS Code extension:** set `agentVisualizer.runtime` to `"auto"`, `"claude"`, `"codex"`, or `"pi"`
+- **`pnpm run dev` and `npx agent-flow-app`:** set `AGENT_FLOW_RUNTIME` to `claude`, `codex`, or `pi`
 
-For non-default Codex installs, set the `CODEX_HOME` environment variable.
+For non-default Codex installs, set `CODEX_HOME`.
+
+For Pi, Agent Flow follows `PI_CODING_AGENT_SESSION_DIR`, project and global `sessionDir` settings, `PI_CODING_AGENT_DIR`, then `~/.pi/agent`. The VS Code `agentVisualizer.piSessionDir` setting, standalone `--pi-session-dir` option, or `AGENT_FLOW_PI_SESSION_DIR` variable overrides that discovery. Agent Flow can expand only subagents that persist their own session files.
 
 ### JSONL Event Log
 
@@ -99,7 +103,8 @@ You can also point Agent Flow at a JSONL event log file:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `agentVisualizer.runtime` | `"auto"` | Which agent runtime(s) to watch: `"auto"` (both), `"claude"`, or `"codex"` |
+| `agentVisualizer.runtime` | `"auto"` | Which agent runtime(s) to watch: `"auto"` (all), `"claude"`, `"codex"`, or `"pi"` |
+| `agentVisualizer.piSessionDir` | `""` | Optional Pi session directory override |
 | `agentVisualizer.devServerPort` | `0` | Development server port (0 = production mode) |
 | `agentVisualizer.eventLogPath` | `""` | Path to a JSONL event log file to watch |
 | `agentVisualizer.autoOpen` | `false` | Auto-open when an agent session starts |
@@ -108,7 +113,7 @@ You can also point Agent Flow at a JSONL event log file:
 
 - [Node.js](https://nodejs.org/) 20+ (LTS recommended)
 - [pnpm](https://pnpm.io/)
-- Claude Code CLI
+- A supported agent CLI: Claude Code, Codex, or Pi
 - For the VS Code extension: a VSCode-compatible IDE 1.85+ (e.g. [VS Code](https://code.visualstudio.com/), [Cursor](https://cursor.sh/), [Windsurf](https://windsurf.com/))
 
 ## Development
@@ -119,7 +124,7 @@ pnpm run setup      # configure Claude Code hooks (one-time)
 pnpm run dev        # start dev server + event relay
 ```
 
-`pnpm run dev` starts both the Next.js dev server and an event relay that receives Claude Code events and streams them to the browser via SSE.
+`pnpm run dev` starts the Next.js server and an event relay for Claude Code, Codex, and Pi sessions.
 
 Other scripts:
 

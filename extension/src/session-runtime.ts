@@ -1,7 +1,7 @@
 /**
  * Runtime abstraction for agent session watchers.
  *
- * Each supported agent tool (Claude Code, Codex, ...) implements
+ * Each supported agent tool (Claude Code, Codex, Pi, ...) implements
  * AgentSessionWatcher and is started via a runtime factory in extension.ts.
  * The interface deliberately matches what the visualizer needs to render
  * live activity: an event stream, session lifecycle, and replay on panel
@@ -15,7 +15,7 @@ import { VisualizerPanel } from './webview-provider'
 import { SESSION_ID_DISPLAY, STATUS_MESSAGE_DURATION_MS } from './constants'
 import type { TypedDisposable, TypedEvent } from './typed-event-emitter'
 
-export type AgentRuntimeMode = 'claude' | 'codex'
+export type AgentRuntimeMode = 'claude' | 'codex' | 'pi'
 
 export interface SessionLifecycleEvent {
   type: 'started' | 'ended' | 'updated' | 'activity'

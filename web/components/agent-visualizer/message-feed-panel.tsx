@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Agent, Z, type AgentState } from '@/lib/agent-types'
+import { Agent, assistantLabelForRuntime, Z, type AgentState } from '@/lib/agent-types'
 import { COLORS, ROLE_COLORS, getStateColor } from '@/lib/colors'
 import type { ConversationMessage } from '@/hooks/simulation/types'
 import { useClickOutside } from '@/hooks/use-click-outside'
@@ -346,7 +346,7 @@ function MessageRow({ message, agentId, agentName, showAgent, isSelected, onClic
 }) {
   const [expanded, setExpanded] = useState(false)
   const role = ROLE_COLORS[message.type] ?? ROLE_COLORS.assistant
-  const roleLabel = message.type === 'assistant' && runtime === 'codex' ? 'CODEX' : role.label
+  const roleLabel = message.type === 'assistant' ? assistantLabelForRuntime(runtime) : role.label
   const isLong = message.content.length > MESSAGE_TRUNCATE_MAX
   const displayText = expanded || !isLong ? message.content : message.content.slice(0, MESSAGE_TRUNCATE_MAX) + '...'
 

@@ -7,7 +7,7 @@ import {
   type TimelineBlock,
 } from '@/lib/agent-types'
 import type { SimulationState, ConversationMessage } from './types'
-import { handleAgentSpawn, handleAgentComplete, handleAgentIdle, handlePermissionRequested, handleModelDetected } from './handle-agent-events'
+import { handleAgentSpawn, handleAgentComplete, handleAgentError, handleAgentIdle, handlePermissionRequested, handleModelDetected } from './handle-agent-events'
 import { handleToolCallStart, handleToolCallEnd } from './handle-tool-events'
 import { handleMessage, handleContextUpdate } from './handle-message-events'
 import { handleSubagentDispatch, handleSubagentReturn } from './handle-subagent-events'
@@ -82,6 +82,7 @@ export function processEvent(event: SimulationEvent, prev: SimulationState, ctx:
         case 'subagent_dispatch': handleSubagentDispatch(event.payload, prev.currentTime, state); break
         case 'subagent_return':   handleSubagentReturn(event.payload, prev.currentTime, state); break
         case 'permission_requested': handlePermissionRequested(event.payload, prev.currentTime, state, ctx); break
+        case 'error':             handleAgentError(event.payload, state); break
       }
 
       // Stabilize references for unchanged collections to prevent

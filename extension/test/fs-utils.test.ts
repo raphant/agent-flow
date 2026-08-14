@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import { readNewFileLines } from '../src/fs-utils'
+import { IncrementalJsonlReader, readNewFileLines } from '../src/fs-utils'
 
 describe('readNewFileLines', () => {
   let dir: string
@@ -100,5 +100,49 @@ describe('readNewFileLines', () => {
 
   it('returns null when the file does not exist', () => {
     assert.equal(readNewFileLines(path.join(dir, 'missing.jsonl'), 0), null)
+  })
+  describe('IncrementalJsonlReader', () => {
+    it('preserves UTF-8 code points split across reads', () => {
+      const reader = new IncrementalJsonlReader()
+      const prefix = Buffer.from('{"text":"')
+      const emoji = Buffer.from('🧪')
+      fs.writeFileSync(file, Buffer.concat([prefix, emoji.subarray(0, 2)]))
+      assert.deepEqual(reader.read(file)?.lines, [])
+
+      fs.appendFileSync(file, Buffer.concat([emoji.subarray(2), Buffer.from('"}\n')]))
+      assert.deepEqual(reader.read(file)?.lines, ['{"text":"🧪"}'])
+    })
+
+    it('detects same-size rewrites and replays complete lines', () => {
+      const reader = new IncrementalJsonlReader()
+      fs.writeFileSync(file, '{"id":"a"}\n')
+      assert.deepEqual(reader.read(file)?.lines, ['{"id":"a"}'])
+
+      fs.writeFileSync(file, '{"id":"b"}\n')
+      const replay = reader.read(file)
+      assert.equal(replay?.reset, true)
+      assert.deepEqual(replay?.lines, ['{"id":"b"}'])
+    })
+
+    it('detects a same-size header rewrite when the tail is unchanged', () => {
+      const reader = new IncrementalJsonlReader()
+      const body = 'x'.repeat(5000)
+      fs.writeFileSync(file, `{"version":1,"body":"${body}"}\n{"tail":true}\n`)
+      reader.read(file)
+
+      fs.writeFileSync(file, `{"version":2,"body":"${body}"}\n{"tail":true}\n`)
+      assert.equal(reader.read(file)?.reset, true)
+    })
+
+    it('resets after truncation and reads replacement content', () => {
+      const reader = new IncrementalJsonlReader()
+      fs.writeFileSync(file, '{"id":"long-entry"}\n')
+      reader.read(file)
+
+      fs.writeFileSync(file, '{"id":"x"}\n')
+      const replay = reader.read(file)
+      assert.equal(replay?.reset, true)
+      assert.deepEqual(replay?.lines, ['{"id":"x"}'])
+    })
   })
 })

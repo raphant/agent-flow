@@ -21,7 +21,8 @@ Use `running-agent-flow-from-source` instead when the task only replaces an inst
 - `web/hooks/use-vscode-bridge.ts` buffers events and owns session selection state.
 - `web/components/agent-visualizer/index.tsx` composes simulation state, panels, Review mode, and the top bar.
 - `web/hooks/simulation/` converts protocol events into visual state.
-- `extension/src/transcript-parser.ts` and `extension/src/codex-rollout-parser.ts` parse the two current runtime formats.
+- `extension/src/transcript-parser.ts`, `extension/src/codex-rollout-parser.ts`, and `extension/src/pi-session-parser.ts` parse the runtime formats.
+- `extension/src/pi-session-watcher.ts` owns Pi directory precedence, workspace filtering, persisted timestamps, and `pi-subagents` child discovery.
 
 ## Procedure
 
@@ -89,7 +90,10 @@ Run `git diff --check` after the final edit.
 - The web package has no browser test framework.
 - Leave one pure test for new logic and run a direct browser probe for interaction behavior.
 - Synthetic browser state disappears after a page reload or bridge reset.
-- Session attachment must preserve the newest transcript mtime. Replacing it with `Date.now()` makes every activity label say `now` after a reload.
+- Session attachment must preserve the newest recorded entry time. Replacing it with `Date.now()` makes every activity label say `now` after a reload.
+- Pi creates a session file only after the first assistant message. Default discovery must scan all encoded project directories and filter each header by workspace.
+- Fresh `pi-subagents` children use nested session files and can have another `cwd`. Fork children copy parent history and need copied-entry ID suppression.
+- Pi can rewrite JSONL during migration or fork setup. Use `IncrementalJsonlReader`; the string-tail reader can split UTF-8 and cannot detect same-size rewrites.
 - Session switching caches simulation snapshots in `AgentVisualizer`, so test switching after events have reached more than one session.
 
 ## Verification

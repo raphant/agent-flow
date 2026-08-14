@@ -32,6 +32,18 @@ export function drawClaudeSpark(ctx: CanvasRenderingContext2D, cx: number, cy: n
   ctx.restore()
 }
 
+export function drawPiLogo(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
+  ctx.save()
+  ctx.fillStyle = color
+  ctx.shadowColor = color
+  ctx.shadowBlur = 6
+  ctx.font = `bold ${r * 1.05}px Georgia, serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('π', cx, cy + r * 0.03)
+  ctx.restore()
+}
+
 export function drawOpenAILogo(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) {
   ctx.save()
   ctx.translate(cx, cy)
@@ -52,7 +64,8 @@ export function drawAgentBrand(
   cx: number, cy: number, r: number, color: string,
   runtime: Agent['runtime'],
 ) {
-  if (runtime === 'codex') drawOpenAILogo(ctx, cx, cy, r, color)
+  if (runtime === 'pi') drawPiLogo(ctx, cx, cy, r, color)
+  else if (runtime === 'codex') drawOpenAILogo(ctx, cx, cy, r, color)
   else drawClaudeSpark(ctx, cx, cy, r, color)
 }
 

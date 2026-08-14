@@ -26,4 +26,5 @@ startServer({
   openBrowser: args.open,
   workspace: process.cwd(),
   verbose: args.verbose,
+  piSessionDir: args.piSessionDir,
 })

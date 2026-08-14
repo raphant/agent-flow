@@ -4,6 +4,7 @@ import { JsonlEventSource } from './event-source'
 import { WebviewToExtensionMessage } from './protocol'
 import { startClaudeRuntime } from './claude-runtime'
 import { startCodexRuntime } from './codex-runtime'
+import { startPiRuntime } from './pi-runtime'
 import { promptHookSetupIfNeeded, configureClaudeHooks, isDisable1MContext } from './hooks-config'
 import { createLogger } from './logger'
 import type { AgentRuntime, AgentRuntimeMode } from './session-runtime'
@@ -17,7 +18,7 @@ let runtimes: AgentRuntime[] = []
 
 function readConfiguredMode(): ConfiguredRuntimeMode {
   const raw = vscode.workspace.getConfiguration('agentVisualizer').get<string>('runtime', 'auto')
-  return raw === 'claude' || raw === 'codex' ? raw : 'auto'
+  return raw === 'claude' || raw === 'codex' || raw === 'pi' ? raw : 'auto'
 }
 
 interface StartRuntimesResult {
@@ -40,6 +41,11 @@ async function startRuntimes(
     log.info('Starting Codex runtime...')
     try { runtimes.push(startCodexRuntime(context)) }
     catch (err) { log.error('Codex runtime failed to start:', err); failures.push('codex') }
+  }
+  if (mode === 'pi' || mode === 'auto') {
+    log.info('Starting Pi runtime...')
+    try { runtimes.push(startPiRuntime(context)) }
+    catch (err) { log.error('Pi runtime failed to start:', err); failures.push('pi') }
   }
   return { runtimes, failures }
 }
@@ -134,7 +140,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 /** Only prompt for Claude hook setup if a Claude runtime is active —
- *  otherwise a Codex-only user would see an irrelevant prompt. */
+ *  otherwise a Codex-only or Pi-only user would see an irrelevant prompt. */
 function promptHookSetupIfNeededForClaude(context: vscode.ExtensionContext): void {
   if (runtimes.some(r => r.mode === 'claude')) {
     promptHookSetupIfNeeded(context)

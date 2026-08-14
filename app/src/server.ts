@@ -16,6 +16,7 @@ interface ServerOptions {
   openBrowser: boolean
   workspace: string
   verbose?: boolean
+  piSessionDir?: string
 }
 
 export async function startServer(options: ServerOptions) {
@@ -28,7 +29,7 @@ export async function startServer(options: ServerOptions) {
   })
   await telemetry.init()
 
-  const relay = await createRelay({ workspace, verbose: options.verbose, telemetry })
+  const relay = await createRelay({ workspace, verbose: options.verbose, telemetry, piSessionDir: options.piSessionDir })
 
   const server = http.createServer((req, res) => {
     // SSE endpoint

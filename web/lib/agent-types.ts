@@ -2,6 +2,11 @@
 // Now with actual information visibility
 
 export type AgentState = 'idle' | 'thinking' | 'tool_calling' | 'complete' | 'error' | 'paused' | 'waiting_permission'
+export type AgentRuntime = 'claude' | 'codex' | 'pi'
+
+export function assistantLabelForRuntime(runtime?: AgentRuntime): 'CLAUDE' | 'CODEX' | 'PI' {
+  return runtime === 'pi' ? 'PI' : runtime === 'codex' ? 'CODEX' : 'CLAUDE'
+}
 
 // Context window composition — the key insight
 export interface ContextBreakdown {
@@ -28,9 +33,9 @@ export interface Agent {
   vy: number
   pinned: boolean
   isMain: boolean
-  /** Which agent runtime produced this agent — used to pick the brand logo.
+  /** Which agent runtime produced this agent and its brand logo.
    *  Optional for forward compat with events that don't carry it (defaults to 'claude'). */
-  runtime?: 'claude' | 'codex'
+  runtime?: AgentRuntime
   /** Model ID last reported for this agent (agent_spawn / model_detected).
    *  Drives context-window sizing and the per-family cost rate. */
   model?: string
@@ -161,6 +166,7 @@ export interface SimulationEvent {
     | 'subagent_dispatch'
     | 'subagent_return'
     | 'permission_requested'
+    | 'error'
   payload: Record<string, unknown>
   sessionId?: string
 }

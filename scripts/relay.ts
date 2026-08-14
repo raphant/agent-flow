@@ -15,6 +15,7 @@ import { readNewFileLines, foldPathCase } from '../extension/src/fs-utils'
 import { scanSubagentsDir, readSubagentNewLines } from '../extension/src/subagent-watcher'
 import { handlePermissionDetection } from '../extension/src/permission-detection'
 import { CodexSessionWatcher } from '../extension/src/codex-session-watcher'
+import { PiSessionWatcher } from '../extension/src/pi-session-watcher'
 import {
   INACTIVITY_TIMEOUT_MS, SCAN_INTERVAL_MS, ACTIVE_SESSION_AGE_S, POLL_FALLBACK_MS,
   SESSION_ID_DISPLAY, SYSTEM_PROMPT_BASE_TOKENS, ORCHESTRATOR_NAME,
@@ -369,7 +370,7 @@ export interface Relay {
   dispose: () => void
 }
 
-export type RelayRuntimeMode = 'claude' | 'codex' | 'auto'
+export type RelayRuntimeMode = 'claude' | 'codex' | 'pi' | 'auto'
 
 export interface RelayOptions {
   workspace: string
@@ -379,12 +380,14 @@ export interface RelayOptions {
    *  Mirrors the extension's `agentVisualizer.runtime` setting so users of the
    *  dev relay and `npx agent-flow-app` have a way to opt out of one runtime. */
   runtime?: RelayRuntimeMode
+  /** Optional Pi session directory override. */
+  piSessionDir?: string
 }
 
 function resolveRuntimeMode(explicit?: RelayRuntimeMode): RelayRuntimeMode {
-  if (explicit === 'claude' || explicit === 'codex' || explicit === 'auto') return explicit
+  if (explicit === 'claude' || explicit === 'codex' || explicit === 'pi' || explicit === 'auto') return explicit
   const raw = process.env.AGENT_FLOW_RUNTIME
-  return raw === 'claude' || raw === 'codex' ? raw : 'auto'
+  return raw === 'claude' || raw === 'codex' || raw === 'pi' ? raw : 'auto'
 }
 
 export async function createRelay(options: RelayOptions): Promise<Relay> {
@@ -401,7 +404,8 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
   const mode = resolveRuntimeMode(options.runtime)
   const wantClaude = mode === 'claude' || mode === 'auto'
   const wantCodex = mode === 'codex' || mode === 'auto'
-  log(`[relay] Runtime mode: ${mode} (watching: ${[wantClaude && 'claude', wantCodex && 'codex'].filter(Boolean).join(', ')})`)
+  const wantPi = mode === 'pi' || mode === 'auto'
+  log(`[relay] Runtime mode: ${mode} (watching: ${[wantClaude && 'claude', wantCodex && 'codex', wantPi && 'pi'].filter(Boolean).join(', ')})`)
 
   let hookServer: HookServer | null = null
   let scanInterval: NodeJS.Timeout | null = null
@@ -446,9 +450,31 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
     codexWatcher = new CodexSessionWatcher(workspace)
     codexWatcher.onEvent((event) => broadcastEvent(event))
     codexWatcher.onSessionLifecycle((lifecycle) => {
-      broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label)
+      if (lifecycle.type === 'activity' && lifecycle.lastActivityTime !== undefined) {
+        broadcastSessionActivity(lifecycle.sessionId, lifecycle.lastActivityTime)
+      } else if (lifecycle.type !== 'activity') {
+        broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label)
+      }
     })
     codexWatcher.start()
+  }
+
+  // Pi is also file-backed, but its default layout is one encoded directory per
+  // working directory. PiSessionWatcher scans the configured root and filters
+  // session headers against this workspace.
+  let piWatcher: PiSessionWatcher | null = null
+  if (wantPi) {
+    const piSessionDir = options.piSessionDir || process.env.AGENT_FLOW_PI_SESSION_DIR
+    piWatcher = new PiSessionWatcher(workspace, piSessionDir ? { sessionDir: piSessionDir } : {})
+    piWatcher.onEvent(event => broadcastEvent(event))
+    piWatcher.onSessionLifecycle((lifecycle) => {
+      if (lifecycle.type === 'activity' && lifecycle.lastActivityTime !== undefined) {
+        broadcastSessionActivity(lifecycle.sessionId, lifecycle.lastActivityTime)
+      } else if (lifecycle.type !== 'activity') {
+        broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label)
+      }
+    })
+    piWatcher.start()
   }
 
   const telemetry = options.telemetry
@@ -508,6 +534,7 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
         })
       }
       if (codexWatcher) sessionList.push(...codexWatcher.getActiveSessions())
+      if (piWatcher) sessionList.push(...piWatcher.getActiveSessions())
       if (sessionList.length > 0) {
         sendSSE(res, { type: 'session-list', sessions: sessionList })
       }
@@ -533,7 +560,7 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
       if (relayDisposed) return
       relayDisposed = true
       const models = [...observedModels].sort().join(',').slice(0, 128)
-      const runtimes = [wantClaude && 'claude', wantCodex && 'codex'].filter(Boolean).join(',')
+      const runtimes = [wantClaude && 'claude', wantCodex && 'codex', wantPi && 'pi'].filter(Boolean).join(',')
       telemetry?.emit({
         ...baseEvent(),
         event_type: 'session_end',
@@ -554,6 +581,7 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
         }
       }
       codexWatcher?.dispose()
+      piWatcher?.dispose()
     },
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { CARD, Z, type AgentState } from '@/lib/agent-types'
+import { CARD, Z, assistantLabelForRuntime, type AgentRuntime, type AgentState } from '@/lib/agent-types'
 import { COLORS, getStateColor } from '@/lib/colors'
 import { TranscriptMessage } from './transcript-message'
 import type { ConversationMessage } from '@/hooks/simulation/types'
@@ -12,7 +12,7 @@ interface ChatPanelProps {
   agentName: string
   agentState: AgentState
   conversation: ConversationMessage[]
-  runtime?: 'claude' | 'codex'
+  runtime?: AgentRuntime
   onClose: () => void
 }
 
@@ -64,7 +64,7 @@ export function AgentChatPanel({
             </div>
           ) : (
             conversation.map((msg) => (
-              <TranscriptMessage key={msg.id} message={msg} assistantLabel={runtime === 'codex' ? 'CODEX' : 'CLAUDE'} />
+              <TranscriptMessage key={msg.id} message={msg} assistantLabel={assistantLabelForRuntime(runtime)} />
             ))
           )}
         </div>

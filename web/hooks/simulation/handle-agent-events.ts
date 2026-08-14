@@ -19,7 +19,7 @@ export function handleAgentSpawn(
   const isMain = asBoolean(payload.isMain)
   const task = typeof payload.task === 'string' ? payload.task : undefined
   const model = typeof payload.model === 'string' ? payload.model : undefined
-  const runtime = payload.runtime === 'codex' ? 'codex' as const : undefined
+  const runtime = payload.runtime === 'codex' || payload.runtime === 'pi' ? payload.runtime : undefined
 
   // If the agent already exists (e.g. session resuming after inactivity),
   // reactivate it instead of replacing — preserves accumulated stats.
@@ -147,6 +147,15 @@ export function handleAgentComplete(
       }
     }
   }
+}
+
+export function handleAgentError(
+  payload: Record<string, unknown>,
+  state: MutableEventState,
+): void {
+  const agentName = asString(payload.agent)
+  const agent = state.agents.get(agentName)
+  if (agent) state.agents.set(agentName, { ...agent, state: 'error', currentTool: undefined })
 }
 
 export function handlePermissionRequested(

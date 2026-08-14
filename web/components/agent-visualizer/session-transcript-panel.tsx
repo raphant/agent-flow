@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
-import { Z, CARD } from '@/lib/agent-types'
+import { Z, CARD, assistantLabelForRuntime, type AgentRuntime } from '@/lib/agent-types'
 import { COLORS } from '@/lib/colors'
 import { TranscriptMessage } from './transcript-message'
 import type { ConversationMessage } from '@/hooks/simulation/types'
@@ -18,7 +18,7 @@ const TRANSCRIPT_INITIAL_VIEWPORT = 400
 interface TranscriptPanelProps {
   visible: boolean
   conversation: ConversationMessage[]
-  runtime?: 'claude' | 'codex'
+  runtime?: AgentRuntime
   onClose: () => void
 }
 
@@ -148,7 +148,7 @@ export function SessionTranscriptPanel({
                     ref={(el) => itemMeasureRef(msg.id, el)}
                     style={{ marginBottom: TRANSCRIPT_GAP }}
                   >
-                    <TranscriptMessage message={msg} searchQuery={searchQuery} assistantLabel={runtime === 'codex' ? 'CODEX' : 'CLAUDE'} />
+                    <TranscriptMessage message={msg} searchQuery={searchQuery} assistantLabel={assistantLabelForRuntime(runtime)} />
                   </div>
                 ))}
               </div>
