@@ -145,6 +145,7 @@ export class PiSessionWatcher implements AgentSessionWatcher {
     return [...this.sessions.values()].filter(session => session.sessionDetected).map(session => ({
       id: session.sessionId,
       label: session.label,
+      runtime: 'pi',
       status: session.sessionCompleted ? 'completed' : 'active',
       startTime: session.sessionStartTime,
       lastActivityTime: session.lastActivityTime,

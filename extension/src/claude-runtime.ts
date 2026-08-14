@@ -122,6 +122,7 @@ export async function startClaudeRuntime(
   // Route watcher events + lifecycle → panel (with orchestrator completion filter)
   const wiring = wireWatcherToPanel(watcher, {
     sessionLabelPrefix: 'Claude',
+    runtime: 'claude',
     transformEvent: filterOrchestratorCompletion,
   })
 

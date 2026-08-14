@@ -4,9 +4,9 @@ import type { SessionInfo } from '../web/lib/bridge-types.ts'
 import { filterAndSortSessions, formatRelativeTime } from '../web/lib/session-search.ts'
 
 const sessions: SessionInfo[] = [
-  { id: 'older-active', label: 'Older active', status: 'active', startTime: 1, lastActivityTime: 20 },
+  { id: 'older-active', label: 'Older active', status: 'active', startTime: 1, lastActivityTime: 20, runtime: 'claude' },
   { id: 'completed', label: 'Completed task', status: 'completed', startTime: 2, lastActivityTime: 40 },
-  { id: 'newer-active', label: 'Newer active', status: 'active', startTime: 3, lastActivityTime: 30 },
+  { id: 'newer-active', label: 'Newer active', status: 'active', startTime: 3, lastActivityTime: 30, runtime: 'pi' },
 ]
 
 test('pins active sessions before completed sessions and sorts each group by activity', () => {
@@ -16,9 +16,11 @@ test('pins active sessions before completed sessions and sorts each group by act
   )
 })
 
-test('searches session labels, IDs, and status', () => {
+test('searches session labels, IDs, status, and available runtime metadata', () => {
   assert.deepEqual(filterAndSortSessions(sessions, 'completed').map(session => session.id), ['completed'])
   assert.deepEqual(filterAndSortSessions(sessions, 'newer-active').map(session => session.id), ['newer-active'])
+  assert.deepEqual(filterAndSortSessions(sessions, 'claude').map(session => session.id), ['older-active'])
+  assert.deepEqual(filterAndSortSessions(sessions, 'pi').map(session => session.id), ['newer-active'])
 })
 
 test('formats relative activity times', () => {
