@@ -19,6 +19,7 @@ export interface SessionInfo {
   status: 'active' | 'completed'
   startTime: number
   lastActivityTime: number
+  runtime?: 'claude' | 'codex' | 'pi'
 }
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'watching'

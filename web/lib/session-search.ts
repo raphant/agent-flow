@@ -4,7 +4,7 @@ export function filterAndSortSessions(sessions: SessionInfo[], query: string): S
   const normalizedQuery = query.trim().toLowerCase()
 
   return sessions
-    .filter(session => !normalizedQuery || [session.label, session.id, session.status]
+    .filter(session => !normalizedQuery || [session.label, session.id, session.status, session.runtime ?? '']
       .some(value => value.toLowerCase().includes(normalizedQuery)))
     .sort((a, b) => {
       if (a.status !== b.status) return a.status === 'active' ? -1 : 1

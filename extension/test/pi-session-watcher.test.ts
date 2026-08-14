@@ -67,6 +67,7 @@ describe('PiSessionWatcher', () => {
 
     const { watcher, events } = watch(workspace, { agentDir: path.join(root, 'agent'), env: {}, homeDir: root })
     assert.deepEqual(watcher.getActiveSessions().map(session => session.id).sort(), ['descendant-session', 'main-session'])
+    assert.ok(watcher.getActiveSessions().every(session => session.runtime === 'pi'))
     const childSpawn = events.find(event => event.type === 'agent_spawn' && event.payload.parent === 'orchestrator')
     assert.equal(childSpawn?.payload.name, 'delegate-4c85f1e1-1')
     assert.equal(childSpawn?.payload.runtime, 'pi')

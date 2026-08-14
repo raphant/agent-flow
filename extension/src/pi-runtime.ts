@@ -15,7 +15,7 @@ export function startPiRuntime(context: vscode.ExtensionContext): AgentRuntime {
   const watcher = new PiSessionWatcher(workspace, configured ? { sessionDir: configured } : {})
   context.subscriptions.push(watcher)
 
-  const wiring = wireWatcherToPanel(watcher, { sessionLabelPrefix: 'Pi' })
+  const wiring = wireWatcherToPanel(watcher, { sessionLabelPrefix: 'Pi', runtime: 'pi' })
   watcher.start()
 
   const rootLabel = watcher.getWatchRoot().replace(os.homedir(), '~')

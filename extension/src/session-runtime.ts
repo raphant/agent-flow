@@ -52,6 +52,7 @@ export interface AgentRuntime {
 export interface WatchPanelWiringOptions {
   /** Human-readable prefix for the session badge (e.g. "Claude", "Codex"). */
   sessionLabelPrefix: string
+  runtime: AgentRuntimeMode
   /** Optional event transform — return null to suppress an event. */
   transformEvent?: (event: AgentEvent) => AgentEvent | null
 }
@@ -102,6 +103,7 @@ export function wireWatcherToPanel(
         session: session ?? {
           id: lifecycle.sessionId,
           label: lifecycle.label,
+          runtime: options.runtime,
           status: 'active',
           startTime: Date.now(),
           lastActivityTime: Date.now(),

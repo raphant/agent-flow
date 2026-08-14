@@ -168,6 +168,7 @@ export class CodexSessionWatcher implements AgentSessionWatcher {
     return Array.from(this.sessions.values()).map(s => ({
       id: s.sessionId,
       label: s.label,
+      runtime: 'codex',
       status: s.sessionCompleted ? 'completed' : 'active',
       startTime: s.sessionStartTime,
       lastActivityTime: s.lastActivityTime,

@@ -13,6 +13,12 @@ interface SessionCommandPaletteProps {
   onCloseSession: (id: string) => void
 }
 
+const RUNTIME_BADGES = {
+  claude: { label: 'CLAUDE', color: COLORS.contextReasoning },
+  codex: { label: 'CODEX', color: COLORS.complete },
+  pi: { label: 'PI', color: COLORS.tool_calling },
+} as const
+
 export function SessionCommandPalette({
   sessions,
   selectedSessionId,
@@ -160,6 +166,7 @@ export function SessionCommandPalette({
               const isSelected = session.id === selectedSessionId
               const hasActivity = sessionsWithActivity.has(session.id)
               const isActive = session.status === 'active'
+              const runtimeBadge = session.runtime ? RUNTIME_BADGES[session.runtime] : null
               return (
                 <li
                   key={session.id}
@@ -189,6 +196,14 @@ export function SessionCommandPalette({
                           boxShadow: hasActivity && !isSelected ? `0 0 4px ${COLORS.complete}` : 'none',
                         }}
                       />
+                      {runtimeBadge && (
+                        <span
+                          className="flex-shrink-0 rounded border px-1 py-0.5 text-[8px] font-semibold tracking-wide"
+                          style={{ color: runtimeBadge.color, borderColor: `${runtimeBadge.color}60`, background: COLORS.holoBg05 }}
+                        >
+                          {runtimeBadge.label}
+                        </span>
+                      )}
                       <span className="truncate" style={{ color: isSelected ? COLORS.holoBright : COLORS.textPrimary }}>
                         {session.label}
                       </span>

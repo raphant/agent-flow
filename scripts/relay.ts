@@ -102,14 +102,19 @@ function broadcastEvent(event: AgentEvent) {
   broadcast(JSON.stringify({ type: 'agent-event', event }))
 }
 
-function broadcastSessionLifecycle(type: 'started' | 'ended' | 'updated', sessionId: string, label: string) {
+function broadcastSessionLifecycle(
+  type: 'started' | 'ended' | 'updated',
+  sessionId: string,
+  label: string,
+  runtime: SessionInfo['runtime'] = 'claude',
+) {
   if (type === 'started') {
     const watched = sessions.get(sessionId)
     const now = Date.now()
     broadcast(JSON.stringify({
       type: 'session-started',
       session: {
-        id: sessionId, label, status: 'active',
+        id: sessionId, label, status: 'active', runtime,
         startTime: watched?.sessionStartTime ?? now,
         lastActivityTime: watched?.lastActivityTime ?? now,
       } as SessionInfo,
@@ -453,7 +458,7 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
       if (lifecycle.type === 'activity' && lifecycle.lastActivityTime !== undefined) {
         broadcastSessionActivity(lifecycle.sessionId, lifecycle.lastActivityTime)
       } else if (lifecycle.type !== 'activity') {
-        broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label)
+        broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label, 'codex')
       }
     })
     codexWatcher.start()
@@ -471,7 +476,7 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
       if (lifecycle.type === 'activity' && lifecycle.lastActivityTime !== undefined) {
         broadcastSessionActivity(lifecycle.sessionId, lifecycle.lastActivityTime)
       } else if (lifecycle.type !== 'activity') {
-        broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label)
+        broadcastSessionLifecycle(lifecycle.type, lifecycle.sessionId, lifecycle.label, 'pi')
       }
     })
     piWatcher.start()
@@ -523,12 +528,12 @@ export async function createRelay(options: RelayOptions): Promise<Relay> {
         log(`[sse] Client disconnected (${sseClients.size} total)`)
       })
 
-      // Send current session list (Claude + Codex)
+      // Send current session list (Claude + Codex + Pi)
       const sessionList: SessionInfo[] = []
       for (const session of sessions.values()) {
         if (!session.sessionDetected) continue
         sessionList.push({
-          id: session.sessionId, label: session.label,
+          id: session.sessionId, label: session.label, runtime: 'claude',
           status: session.sessionCompleted ? 'completed' : 'active',
           startTime: session.sessionStartTime, lastActivityTime: session.lastActivityTime,
         })
