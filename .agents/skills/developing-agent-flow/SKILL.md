@@ -78,6 +78,7 @@ pnpm run build:extension
 ```
 
 Also run `pnpm run build:app` when the standalone binary or its packaged UI can change.
+Run `pnpm run test:pi-smoke` after `pnpm run build:app` when the standalone Pi path can change.
 Run `git diff --check` after the final edit.
 
 ## Pitfalls
@@ -103,6 +104,7 @@ Run `git diff --check` after the final edit.
 - `pnpm run build:webview` produces the VS Code webview bundle.
 - Extension lint, test types, tests, and build pass when extension code changed.
 - `pnpm run build:app` produces `app/dist/app.js` and `app/dist/webview/` when standalone behavior changed.
+- `pnpm run test:pi-smoke` verifies Pi replay, child events, failures, and live JSONL-to-SSE updates against the built app.
 - The direct browser probe covers the requested state transition and keyboard path.
 - `git diff --check` reports no whitespace errors.
 

@@ -34,3 +34,12 @@ jobs:
 
       - name: Web typecheck
         run: pnpm --dir web exec tsc --noEmit
+
+      - name: Production builds
+        run: |
+          pnpm run build:web
+          pnpm run build:extension
+          pnpm run build:app
+
+      - name: Pi standalone smoke
+        run: pnpm run test:pi-smoke
